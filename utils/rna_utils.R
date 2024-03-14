@@ -81,4 +81,20 @@ run_scDblFinder <- function(seurat_split){
   return(seurat_split)
 }
 
-##
+
+
+## run scds doublet scoring
+run_scds <- function(seurat_split){
+  for (sample_index in 1:length(seurat_split)) {
+    sce <- as.SingleCellExperiment(seurat_split[[sample_index]])
+    
+    sce <- cxds(sce, retRes = TRUE, verb = TRUE)
+    sce <- bcds(sce, retRes = TRUE, verb = TRUE)
+    sce <- cxds_bcds_hybrid(sce, verb = TRUE)
+    
+    seurat_split[[sample_index]]$cxds_scores <- sce$cxds_score
+    seurat_split[[sample_index]]$bcds_scores <- sce$bcds_score
+    seurat_split[[sample_index]]$hybrid_scores <- sce$hybrid_score
+  }
+  return(seurat_split)
+}
