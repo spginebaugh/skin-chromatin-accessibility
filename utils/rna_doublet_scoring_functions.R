@@ -87,3 +87,28 @@ run_doubletfinder <- function(seurat_split){
   }
   return(seurat_split)
 }
+
+## add doublet metadata to merged seruat object
+add_doublet_metadata <- function(seurat_merged, seurat_split){
+  metalist <- lapply(seurat_split, function(x) {
+    metadata <- x@meta.data
+    return(metadata)
+  })
+  metalist <- lapply(metalist, function(x) {
+    colnames(x)[(ncol(x) - 1):ncol(x)] <- c("DF_score", "DF_classification")
+    return(x)
+  })
+  
+  metalist <- do.call("rbind", metalist[1:length(metalist)])
+  
+  seurat_merged$scDbl_class <- metalist$scDbl_class
+  seurat_merged$cxds_scores <- metalist$cxds_score
+  seurat_merged$bcds_scores <- metalist$bcds_score
+  seurat_merged$hybrid_scores <- metalist$hybrid_score
+  seurat_merged$DF_score <- metalist$DF_score
+  seurat_merged$DF_classification <- metalist$DF_classification
+  
+  return(seurat_merged)
+}
+
+
