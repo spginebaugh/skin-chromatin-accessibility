@@ -26,10 +26,14 @@ seurat <- import_seurat(
 seurat_split <- SplitObject(seurat, split.by = "sample")
 
 for (i in 1:length(seurat_split)) {
-  seurat_split[[i]] <- NormalizeData(seurat_split[[i]])
-  seurat_split[[i]] <- FindVariableFeatures(seurat_split[[i]])
-  seurat_split[[i]] <- ScaleData(seurat_split[[i]])
-  seurat_split[[i]] <- RunPCA(seurat_split[[i]])
+  seurat_split[[i]] <- NormalizeData(seurat_split[[i]], verbose = FALSE)
+  seurat_split[[i]] <- FindVariableFeatures(seurat_split[[i]], verbose = FALSE)
+  seurat_split[[i]] <- ScaleData(seurat_split[[i]], verbose = FALSE)
+  seurat_split[[i]] <- RunPCA(seurat_split[[i]], verbose = FALSE)
 }
 
-
+## functions pulled in from 'rna_doublet_scoring_functions.R'
+seurat_split <- run_scDblFinder(seurat_split)
+seurat_split <- run_scds(seurat_split)
+seurat_split <- run_doubletfinder(seurat_split)
+seurat <- add_doublet_metadata(seurat, seurat_split)
