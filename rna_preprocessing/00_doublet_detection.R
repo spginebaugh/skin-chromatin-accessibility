@@ -10,7 +10,8 @@ set.seed(43648)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                 Import Data                               ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cellranger_folder_path = "data/rna_GSE212447/GSE212447_RAW/"
+output_metadata_file <- "data/processed_data/doublet_metadata.csv"
+cellranger_folder_path <- "data/rna_GSE212447/GSE212447_RAW/"
 file_names_vec <- list.files(cellranger_folder_path)
 
 seurat <- import_seurat(
@@ -37,3 +38,8 @@ seurat_split <- run_scDblFinder(seurat_split)
 seurat_split <- run_scds(seurat_split)
 seurat_split <- run_doubletfinder(seurat_split)
 seurat <- add_doublet_metadata(seurat, seurat_split)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                    save                                  ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+write.csv(seurat@meta.data, output_metadata_file)
