@@ -52,7 +52,7 @@ import_seurat <- function(cellranger_folder_path, file_names_vec, file_h5_path =
   seurat <- JoinLayers(seurat) # merge samples in Seurat V5
   
   colnames(seurat@meta.data)[1] <- "sample"
-  seurat$barcodes <- colnames(seurat)
+  seurat$barcode <- colnames(seurat)
   
   return(seurat)
 }

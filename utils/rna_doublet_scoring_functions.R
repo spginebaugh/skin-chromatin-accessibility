@@ -26,14 +26,14 @@ run_scDblFinder <- function(seurat_split){
       GetAssayData(seurat_split[[sample_index]], assay = "RNA", slot = "counts"),
       returnType = "table"
     ) %>% as.data.frame()
-    dbl_out$barcodes <- rownames(dbl_out)
-    dbl_out <- dbl_out[, c("barcodes", "class")]
-    colnames(dbl_out) <- c("barcodes", "scDbl_class")
+    dbl_out$barcode <- rownames(dbl_out)
+    dbl_out <- dbl_out[, c("barcode", "class")]
+    colnames(dbl_out) <- c("barcode", "scDbl_class")
     
     ## add scoring into seurat metadata
     metadata <- seurat_split[[sample_index]]@meta.data
-    metadata <- left_join(metadata, dbl_out, by = "barcodes")
-    rownames(metadata) <- metadata$barcodes
+    metadata <- left_join(metadata, dbl_out, by = "barcode")
+    rownames(metadata) <- metadata$barcode
     seurat_split[[sample_index]]@meta.data <- metadata
   }
   return(seurat_split)
@@ -50,9 +50,9 @@ run_scds <- function(seurat_split){
     sce <- bcds(sce, retRes = TRUE, verb = TRUE)
     sce <- cxds_bcds_hybrid(sce, verb = TRUE)
     
-    seurat_split[[sample_index]]$cxds_scores <- sce$cxds_score
-    seurat_split[[sample_index]]$bcds_scores <- sce$bcds_score
-    seurat_split[[sample_index]]$hybrid_scores <- sce$hybrid_score
+    seurat_split[[sample_index]]$cxds_score <- sce$cxds_score
+    seurat_split[[sample_index]]$bcds_score <- sce$bcds_score
+    seurat_split[[sample_index]]$hybrid_score <- sce$hybrid_score
   }
   return(seurat_split)
 }
@@ -103,9 +103,9 @@ add_doublet_metadata <- function(seurat_merged, seurat_split){
   metalist <- do.call("rbind", metalist[1:length(metalist)])
   
   seurat_merged$scDbl_class <- metalist$scDbl_class
-  seurat_merged$cxds_scores <- metalist$cxds_score
-  seurat_merged$bcds_scores <- metalist$bcds_score
-  seurat_merged$hybrid_scores <- metalist$hybrid_score
+  seurat_merged$cxds_score <- metalist$cxds_score
+  seurat_merged$bcds_score <- metalist$bcds_score
+  seurat_merged$hybrid_score <- metalist$hybrid_score
   seurat_merged$DF_score <- metalist$DF_score
   seurat_merged$DF_classification <- metalist$DF_classification
   
