@@ -42,4 +42,4 @@ seurat <- add_doublet_metadata(seurat, seurat_split)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                    save                                  ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-write.csv(seurat@meta.data, output_metadata_file)
+write.csv(seurat@meta.data, output_metadata_file, row.names = FALSE)
