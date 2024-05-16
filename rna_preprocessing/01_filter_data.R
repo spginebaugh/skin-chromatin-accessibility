@@ -67,3 +67,6 @@ metadata <- left_join(
   by = "barcode_ID"
 )
 
+## add back to seurat object
+rownames(metadata) <- metadata$barcode
+seurat@meta.data <- metadata
