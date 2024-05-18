@@ -70,3 +70,9 @@ metadata <- left_join(
 ## add back to seurat object
 rownames(metadata) <- metadata$barcode
 seurat@meta.data <- metadata
+
+
+## add in cell quality information
+seurat$mitoRatio <- PercentageFeatureSet(object = seurat, pattern = "^MT-") / 100
+seurat$riboRatio <- PercentageFeatureSet(object = seurat, pattern = "^RP[SL][[:digit:]]|^RPLP[[:digit:]]|^RPSA") / 100
+seurat$log10GenesPerUMI <- log10(seurat$nFeature_RNA) / log10(seurat$nCount_RNA)
