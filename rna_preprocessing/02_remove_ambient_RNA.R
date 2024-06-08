@@ -59,15 +59,39 @@ DimPlot(decontam, group.by = c("ms_broad_ct", "ms_fine_ct"))
 
 ## cluster
 decontam <- decontam %>% FindNeighbors(reduction = "harmony", dims = 1:40)
-decontam <- decontam %>% FindClusters(resolution = c(0.2,0.4))
-DimPlot(decontam, group.by = c("RNA_snn_res.0.2","RNA_snn_res.0.4"), label = TRUE)
+decontam <- decontam %>% FindClusters(resolution = c(0.2))
+DimPlot(decontam, group.by = c("RNA_snn_res.0.2"), label = TRUE)
 ## select snn_res.0.2 as resolution for clusters
 Idents(decontam) <- decontam$RNA_snn_res.0.2
 
-## scale all genes, as recommended by the scCDC vignette
-decontam <- decontam %>% ScaleData(features = rownames(decontam))
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                            run decontamination                           ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-gcgs <- ContaminationDetection(decontam)
+## convert seurat to older version to work with scCDC
+options(Seurat.object.assay.version = "v3")
+decontam_v3 <- CreateSeuratObject(counts = GetAssayData(decontam, slot = "counts", assay = "RNA"),
+                                  meta.data = decontam@meta.data)
+
+## rename clusters to work with program
+decontam_v3$seurat_clusters <- factor(paste0("g",decontam_v3$RNA_snn_res.0.2))
+decontam_v3@active.ident <- ((decontam_v3$seurat_clusters))
+
+## run decontamination
+gcgs <- ContaminationDetection(decontam_v3)
+cont_ratio <- ContaminationQuantification(decontam_v3, rownames(gcgs))
+seuratobj_corrected = ContaminationCorrection(decontam_v3,rownames(gcgs))
+
+options(Seurat.object.assay.version = "v5")
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                     add info to original seurat object                   ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                    save                                  ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
