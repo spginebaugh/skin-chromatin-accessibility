@@ -83,15 +83,15 @@ gcgs <- ContaminationDetection(decontam_v3)
 cont_ratio <- ContaminationQuantification(decontam_v3, rownames(gcgs))
 seuratobj_corrected = ContaminationCorrection(decontam_v3,rownames(gcgs))
 
-options(Seurat.object.assay.version = "v5")
-
-
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                     add info to original seurat object                   ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+options(Seurat.object.assay.version = "v5")
+seurat <- seurat[, colnames(seurat) %in% colnames(seuratobj_corrected)]
 
-
+seurat[["Corrected"]] <- CreateAssay5Object(counts = GetAssayData(seuratobj_corrected, slot ="counts", assay = "Corrected"))
+DefaultAssay(seurat) <- "Corrected"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                    save                                  ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+qsave(seurat, output_seurat_file)
