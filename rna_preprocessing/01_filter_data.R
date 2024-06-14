@@ -1,6 +1,16 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                       Load functions and libraries                        ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(qs)
+  library(ggplot2)
+  library(magrittr)
+  library(dplyr)
+  library(SingleCellExperiment)
+  library(tidyverse)
+})
+
 source("utils/rna_utils.R")
 set.seed(43648)
 

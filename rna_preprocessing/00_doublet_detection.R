@@ -1,6 +1,20 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                       Load functions and libraries                        ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(qs)
+  library(ggplot2)
+  library(magrittr)
+  library(dplyr)
+  library(SingleCellExperiment)
+  
+  library(scds)
+  library(scater)
+  library(DoubletFinder)
+  library(scDblFinder)
+})
+
 source("utils/rna_utils.R")
 source("utils/rna_doublet_scoring_functions.R")
 
