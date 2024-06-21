@@ -42,7 +42,7 @@ DimPlot(seurat, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"))
 
 ## selected resolution of 0.2
 Idents(seurat) <- seurat$Corrected_snn_res.0.2
-DimPlot(seurat, group.by = c("Corrected_snn_res.0.2"), label = TRUE)
+DimPlot(seurat, group.by = c("Corrected_snn_res.0.2","ms_broad_ct"), label = TRUE)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  annotate                                ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
