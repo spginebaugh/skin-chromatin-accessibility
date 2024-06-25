@@ -42,24 +42,32 @@ DimPlot(seurat, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"))
 
 ## selected resolution of 0.2
 Idents(seurat) <- seurat$Corrected_snn_res.0.2
-DimPlot(seurat, group.by = c("Corrected_snn_res.0.2","ms_broad_ct"), label = TRUE)
+DimPlot(seurat, group.by = c("Corrected_snn_res.0.2","ms_veryfine_ct"), label = TRUE)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  annotate                                ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 seurat$annotation_level1 <- plyr::revalue(seurat$Corrected_snn_res.0.2, 
-                                    c('0' = "",
-                                      '1' = "",
-                                      '2' = "",
-                                      '3' = "",
-                                      '4' = "",
-                                      '5' = "",
-                                      '6' = "",
-                                      '7' = "",
-                                      '8' = "",
-                                      '9' = "",
-                                      '10' = "",
-                                      '11' = "",
-                                      '12' = "",
-                                      '13' = "",
-                                      '14' = "",
-                                      '15' = ""))
+                                    c('0' = "Lymphoid",
+                                      '1' = "Fibroblast",
+                                      '2' = "Keratinocyte",
+                                      '3' = "Keratinocyte",
+                                      '4' = "Muscle",
+                                      '5' = "Myeloid",
+                                      '6' = "Vascular_endo",
+                                      '7' = "Lymphoid",
+                                      '8' = "Mast",
+                                      '9' = "Keratinocyte",
+                                      '10' = "Melanocyte",
+                                      '11' = "Lymphatic_endo",
+                                      '12' = "Trichocyte",
+                                      '13' = "DC",
+                                      '14' = "Plasma_B_cell",
+                                      '15' = "Keratinocyte"))
+
+DimPlot(seurat, group.by = c("annotation_level1"), label = TRUE)
+Idents(seurat) <- seurat$annotation_level1
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                    save                                  ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+qsave(seurat, output_seurat_file)
