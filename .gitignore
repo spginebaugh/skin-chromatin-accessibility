@@ -6,3 +6,6 @@
 data/
 manuscript/
 manuscript_metadata/
+ArchRLogs/
+tmp/
+QualityControl/
