@@ -10,7 +10,6 @@ library(SingleCellExperiment)
 library(tidyverse)
 library(harmony)
 
-library(Signac)
 library(ArchR)
 set.seed(43648)
 
