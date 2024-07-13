@@ -17,19 +17,17 @@ set.seed(43648)
 #                                 Import Data                               ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 output_file <- "data/processed_data/unfiltered_archr_proj.qs"
+input_files <- getInputFiles("data/atac_GSE212448/fragments")
+sample_names <- word(names(input_files),2,-1,"_")
 
 data("geneAnnoHg38")
 data("genomeAnnoHg38")
 geneAnno <- geneAnnoHg38
 genomeAnno <- genomeAnnoHg38
-## only have fragment files
-fragpath <- "data/atac_GSE212448/fragments/GSE212448_C_PB1_fragments.tsv.gz"
-
-counts1 <- create_count_matrix(fragpath)
 
 arrow_files <- createArrowFiles(
-  inputFiles = a,
-  sampleNames = names(a),
+  inputFiles = input_files,
+  sampleNames = sample_names,
   geneAnno = geneAnno,
   genomeAnno = genomeAnno,
   minTSS = 0, # Don't filter at this point
@@ -38,7 +36,7 @@ arrow_files <- createArrowFiles(
   addGeneScoreMat = FALSE
 )
 
-
+dir.create("data/unfiltered_ATAC_output", showWarnings = FALSE)
 proj <- ArchRProject(
   ArrowFiles = arrow_files, 
   geneAnnotation = geneAnno,
