@@ -16,6 +16,10 @@ set.seed(43648)
 
 library(ggrastr)
 
+source("utils/archr_helpers.R")
+source("utils/matrix_helpers.R")
+source("utils/misc_helpers.R")
+source("utils/plotting_config.R")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  functions                               ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,6 +74,11 @@ output_file <- "data/processed_data/filtered_archr_proj.qs"
 
 proj <- qread("data/processed_data/unfiltered_archr_proj.qs")
 
+sample_cmap <- readRDS("data/utils_data/sample_cmap.rds")
+disease_cmap <- head(cmaps_BOR$stallion, 3)
+names(disease_cmap) <- c("AA", "C_SD", "C_PB")
+
+pointSize <- 0.5
 
 # Run classification on all samples
 minTSS <- 5
@@ -85,33 +94,33 @@ names(cellResults) <- samples
 
 
 
-# Plot filtering results
-for(samp in samples){
-  df <- as.data.frame(cellResults[[samp]]$results)
-  cell_df <- df[df$classification == "cell",]
-  non_cell_df <- df[df$classification != "cell",]
-  
-  xlims <- c(log10(500), log10(100000))
-  ylims <- c(0, 18)
-  # QC Fragments by TSS plot w/ filtered cells removed:
-  p <- ggPoint(
-    x = cell_df[,1], 
-    y = cell_df[,2], 
-    size = 1.5,
-    colorDensity = TRUE,
-    continuousSet = "sambaNight",
-    xlabel = "Log10 Unique Fragments",
-    ylabel = "TSS Enrichment",
-    xlim = xlims,
-    ylim = ylims,
-    title = sprintf("%s droplets plotted", nrow(cell_df)),
-    rastr = TRUE
-  )
-  # Add grey dots for non-cells
-  p <- p + geom_point_rast(data=non_cell_df, aes(x=log10nFrags, y=TSSEnrichment), color="light grey", size=0.5)
-  p <- p + geom_hline(yintercept = minTSS, lty = "dashed") + geom_vline(xintercept = log10(1000), lty = "dashed")
-  plotPDF(p, name = paste0(samp,"_EM_model_filtered_cells_TSS-vs-Frags.pdf"), ArchRProj = proj, addDOC = FALSE)
-}
+# # Plot filtering results
+# for(samp in samples){
+#   df <- as.data.frame(cellResults[[samp]]$results)
+#   cell_df <- df[df$classification == "cell",]
+#   non_cell_df <- df[df$classification != "cell",]
+#   
+#   xlims <- c(log10(500), log10(100000))
+#   ylims <- c(0, 18)
+#   # QC Fragments by TSS plot w/ filtered cells removed:
+#   p <- ggPoint(
+#     x = cell_df[,1], 
+#     y = cell_df[,2], 
+#     size = 1.5,
+#     colorDensity = TRUE,
+#     continuousSet = "sambaNight",
+#     xlabel = "Log10 Unique Fragments",
+#     ylabel = "TSS Enrichment",
+#     xlim = xlims,
+#     ylim = ylims,
+#     title = sprintf("%s droplets plotted", nrow(cell_df)),
+#     rastr = TRUE
+#   )
+#   # Add grey dots for non-cells
+#   p <- p + geom_point_rast(data=non_cell_df, aes(x=log10nFrags, y=TSSEnrichment), color="light grey", size=0.5)
+#   p <- p + geom_hline(yintercept = minTSS, lty = "dashed") + geom_vline(xintercept = log10(1000), lty = "dashed")
+#   plotPDF(p, name = paste0(samp,"_EM_model_filtered_cells_TSS-vs-Frags.pdf"), ArchRProj = proj, addDOC = FALSE)
+# }
 
 finalCellCalls <- lapply(cellResults, function(x) x$results) %>% do.call(rbind, .)
 proj <- addCellColData(proj, data=finalCellCalls$classification, name="cellCall", cells=rownames(finalCellCalls), force=TRUE)
@@ -145,12 +154,77 @@ subProj <- subsetArchRProject(proj, cells=realCells,
 meta_sample <- read_csv("manuscript_metadata/manuscript_table_S1_sample_info.csv")
 meta_cell_atac <- read_csv("manuscript_metadata/manuscript_table_S2_scatac_meta.csv")
 
-subProj$preservation <- samp.preservation[subProj$Sample2] %>% unlist() %>% as.factor()
-subProj$sex <- samp.sex[subProj$Sample2] %>% unlist() %>% as.factor()
-subProj$age <- samp.age[subProj$Sample2] %>% unlist()
+meta_merge <- data.frame(Sample_ID = subProj$Sample2)
+meta_merge <- left_join(meta_merge, meta_sample[,c("Sample_ID","rounded_age","sex","preservation","disease_status")], by = "Sample_ID")
 
 
+subProj$preservation <- meta_merge$preservation
+subProj$sex <- meta_merge$sex %>% factor()
+subProj$age <- meta_merge$rounded_age
+subProj$disease_status <- meta_merge$disease_status
 
+subProj$diseaseStatus <- NA
+subProj$diseaseStatus <- ifelse(grepl("C_SD", subProj$Sample), "C_SD", subProj$diseaseStatus)
+subProj$diseaseStatus <- ifelse(grepl("C_PB", subProj$Sample), "C_PB", subProj$diseaseStatus)
+subProj$diseaseStatus <- ifelse(grepl("AA", subProj$Sample), "AA", subProj$diseaseStatus)
+
+# Now, add tile matrix and gene score matrix to ArchR project
+subProj <- addTileMatrix(subProj, force=TRUE)
+subProj <- addGeneScoreMatrix(subProj, force=TRUE)
+
+# Add Infered Doublet Scores to ArchR project (~5-10 minutes)
+subProj <- addDoubletScores(subProj, dimsToUse=1:20, scaleDims=TRUE, LSIMethod=2)
+
+# Filter doublets:
+subProj <- filterDoublets(subProj, filterRatio = 1)
+
+saveArchRProject(subProj,outputDirectory = "data/processed_data/archRsave1")
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                  clustering                              ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+set.seed(43648)
+
+subProj <- addIterativeLSI(
+  ArchRProj = subProj,
+  useMatrix = "TileMatrix", 
+  name = "IterativeLSI", 
+  sampleCellsPre = 15000,
+  varFeatures = 50000, 
+  dimsToUse = 1:25,
+  force = TRUE
+)
+
+# Identify Clusters from Iterative LSI
+subProj <- addClusters(
+  input = subProj,
+  reducedDims = "IterativeLSI",
+  method = "Seurat",
+  name = "Clusters",
+  resolution = 0.6,
+  force = TRUE
+)
+
+set.seed(43648)
+subProj <- addUMAP(
+  ArchRProj = subProj, 
+  reducedDims = "IterativeLSI", 
+  name = "UMAP", 
+  nNeighbors = 50, 
+  minDist = 0.4, 
+  metric = "cosine",
+  force = TRUE
+)
+
+
+# Relabel clusters so they are sorted by cluster size
+subProj <- relabelClusters(subProj)
+
+subProj <- addImputeWeights(subProj)
+
+# Make various cluster plots:
+subProj <- visualizeClustering(subProj, pointSize=pointSize, sampleCmap=samp_cmap, diseaseCmap=disease_cmap)
 
 
 
