@@ -175,6 +175,9 @@ subProj <- addGeneScoreMatrix(subProj, force=TRUE)
 # Add Infered Doublet Scores to ArchR project (~5-10 minutes)
 subProj <- addDoubletScores(subProj, dimsToUse=1:20, scaleDims=TRUE, LSIMethod=2)
 
+sample_cmap <- sample_cmap[names(sample_cmap) %in% unique(subProj$Sample2)]
+samp_cmap <- unlist(sample_cmap)
+
 # Filter doublets:
 subProj <- filterDoublets(subProj, filterRatio = 1)
 
@@ -225,6 +228,139 @@ subProj <- addImputeWeights(subProj)
 
 # Make various cluster plots:
 subProj <- visualizeClustering(subProj, pointSize=pointSize, sampleCmap=samp_cmap, diseaseCmap=disease_cmap)
+
+saveArchRProject(subProj,outputDirectory = "data/processed_data/archRsave2")
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                          remove doublet clusters                         ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+markersGS <- getMarkerFeatures(
+  ArchRProj = subProj, 
+  useMatrix = "GeneScoreMatrix", 
+  groupBy = "Clusters",
+  bias = c("TSSEnrichment", "log10(nFrags)"),
+  testMethod = "wilcoxon"
+)
+
+# All valid gene names
+geneNames <- rowData(markersGS)$name
+
+# Lists of 'marker genes'
+markerList <- getMarkers(markersGS, cutOff = "FDR <= 0.01 & Log2FC >= 1.00")
+
+
+# Marker genes we want to highlight for labeling broad clusters:
+markerGenes  <- c(
+  "KRT1", "KRT10", "KRT14", "KRT15", # Keratinocytes
+  "ITGB8", "SOX9", "LGR5", "LHX2", "KRT16", "KRT75", # Hair follicle
+  "THY1", "COL1A1", "COL11A1", # Fibroblasts
+  "CD3D", "CD8A", "CD4", "FOXP3", "IKZF2", # T-cells
+  "MS4A1", "IGLL5", # B-cells
+  "CD14", "CD86", "CD74", "CCR7", "CD163", #Monocytes / macrophages
+  "TPSB2", "FCER1A", "KIT", "HPGD", # Mast cells? (KIT and MITF also melanocytes)
+  "VWF", "PECAM1", "SELE", # Endothelial
+  "MITF", "TYR", "SOX10", # Melanocyte markers
+  "ITGAX", "CD1C", "CD1A", "CD207", # Dendritic cells (ITGAX = cd11c)
+  "TPM1", "TPM2", "MYL9", # Muscle
+  "FOXE1", "SMIM23", "GJB6" # HF keratinocytes
+)
+
+heatmapGS <- plotMarkerHeatmap(
+  seMarker = markersGS, 
+  cutOff = "FDR <= 0.01 & Log2FC >= 1.00", 
+  labelMarkers = markerGenes,
+  binaryClusterRows = TRUE,
+  clusterCols = TRUE,
+  transpose = FALSE
+)
+
+hm <- ComplexHeatmap::draw(heatmapGS, heatmap_legend_side = "bot", annotation_legend_side = "bot")
+
+plotEmbedding(
+  ArchRProj = subProj, 
+  colorBy = "GeneScoreMatrix", 
+  name = markerGenes, 
+  embedding = "UMAP",
+  imputeWeights = getImputeWeights(proj), 
+  plotAs="points", size = pointSize
+)
+
+nonMultipletCells <- getCellNames(subProj)[subProj$Clusters %ni% c("C11","C17","C6","C22")]
+
+subProj2 <- subsetArchRProject(
+  ArchRProj = subProj,
+  cells = nonMultipletCells,
+  outputDirectory = "data/ATAC_multiplets_removed_output",
+  dropCells=TRUE, force=TRUE
+)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                              redo clustering                             ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+set.seed(43648)
+
+proj <- addIterativeLSI(
+  ArchRProj = proj,
+  useMatrix = "TileMatrix", 
+  name = "IterativeLSI",
+  sampleCellsPre = 20000,
+  varFeatures = 50000, 
+  dimsToUse = 1:50,
+  force = TRUE
+)
+
+# Identify Clusters from Iterative LSI
+proj <- addClusters(
+  input = proj,
+  reducedDims = "IterativeLSI",
+  method = "Seurat",
+  name = "Clusters",
+  resolution = 0.7,
+  force = TRUE
+)
+
+set.seed(1)
+proj <- addUMAP(
+  ArchRProj = proj, 
+  reducedDims = "IterativeLSI", 
+  name = "UMAP", 
+  nNeighbors = 60, 
+  minDist = 0.6, 
+  metric = "cosine",
+  force = TRUE
+)
+
+# Relabel clusters so they are sorted by cluster size
+proj <- relabelClusters(proj)
+proj <- addImputeWeights(proj)
+
+clustNames <- list(
+  "C1" = "",
+  "C2" = "", 
+  "C3" = "Lymphoid", 
+  "C4" = "Vascular_endo",
+  "C5" = "Myeloid", 
+  "C6" = "",
+  "C7" = "",
+  "C8" = "",
+  "C9" = "Muscle",
+  "C10" = "",
+  "C11" = "",
+  "C12" = "Lymphoid",
+  "C13" = "Muscle",
+  "C14" = "Lymphoid",
+  "C15" = "",
+  "C16" = "",
+  "C17" = "",
+  "C18" = "Melanocyte",
+  "C19" = "DC",
+  "C20" = "",
+  "C21" = "Myeloid",
+  "C22" = ""
+)
 
 
 
