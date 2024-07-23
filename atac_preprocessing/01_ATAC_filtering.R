@@ -302,8 +302,8 @@ subProj2 <- subsetArchRProject(
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 set.seed(43648)
 
-proj <- addIterativeLSI(
-  ArchRProj = proj,
+subProj2 <- addIterativeLSI(
+  ArchRProj = subProj2,
   useMatrix = "TileMatrix", 
   name = "IterativeLSI",
   sampleCellsPre = 20000,
@@ -313,8 +313,8 @@ proj <- addIterativeLSI(
 )
 
 # Identify Clusters from Iterative LSI
-proj <- addClusters(
-  input = proj,
+subProj2 <- addClusters(
+  input = subProj2,
   reducedDims = "IterativeLSI",
   method = "Seurat",
   name = "Clusters",
@@ -322,9 +322,9 @@ proj <- addClusters(
   force = TRUE
 )
 
-set.seed(1)
-proj <- addUMAP(
-  ArchRProj = proj, 
+set.seed(43648)
+subProj2 <- addUMAP(
+  ArchRProj = subProj2, 
   reducedDims = "IterativeLSI", 
   name = "UMAP", 
   nNeighbors = 60, 
@@ -334,36 +334,59 @@ proj <- addUMAP(
 )
 
 # Relabel clusters so they are sorted by cluster size
-proj <- relabelClusters(proj)
-proj <- addImputeWeights(proj)
+subProj2 <- relabelClusters(subProj2)
+subProj2 <- addImputeWeights(subProj2)
 
-clustNames <- list(
-  "C1" = "",
-  "C2" = "", 
-  "C3" = "Lymphoid", 
-  "C4" = "Vascular_endo",
-  "C5" = "Myeloid", 
-  "C6" = "",
-  "C7" = "",
-  "C8" = "",
-  "C9" = "Muscle",
-  "C10" = "",
-  "C11" = "",
-  "C12" = "Lymphoid",
-  "C13" = "Muscle",
-  "C14" = "Lymphoid",
-  "C15" = "",
-  "C16" = "",
-  "C17" = "",
-  "C18" = "Melanocyte",
-  "C19" = "DC",
-  "C20" = "",
-  "C21" = "Myeloid",
-  "C22" = ""
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                 annotate                                ----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+plotEmbedding(ArchRProj = subProj2, colorBy = "cellColData", name = "Clusters", embedding = "UMAP")
+
+markersGS <- getMarkerFeatures(
+  ArchRProj = subProj2, 
+  useMatrix = "GeneScoreMatrix", 
+  groupBy = "Clusters",
+  bias = c("TSSEnrichment", "log10(nFrags)"),
+  testMethod = "wilcoxon"
 )
 
+plotEmbedding(
+  ArchRProj = subProj2, 
+  colorBy = "GeneScoreMatrix", 
+  name = markerGenes, 
+  embedding = "UMAP",
+  imputeWeights = getImputeWeights(subProj2), 
+  plotAs="points", size = pointSize
+)
 
+clustNames <- list(
+  "C1" = "Lymphoid",
+  "C2" = "Fibroblast", 
+  "C3" = "Fibroblast", 
+  "C4" = "Myeloid",
+  "C5" = "Vascular_endo", 
+  "C6" = "Keratinocyte",
+  "C7" = "Keratinocyte",
+  "C8" = "Muscle",
+  "C9" = "Keratinocyte",
+  "C10" = "Keratinocyte",
+  "C11" = "Keratinocyte",
+  "C12" = "Lymphoid",
+  "C13" = "Keratinocyte",
+  "C14" = "Muscle",
+  "C15" = "Lymphoid",
+  "C16" = "Melanocyte",
+  "C17" = "DC",
+  "C18" = "Keratinocyte",
+  "C19" = "Lymphatic_endo",
+  "C20" = "Vascular_endo",
+  "C21" = "Myeloid"
+)
 
+subProj2$annotation_level1 <- clustNames[subProj2$Clusters] %>% unlist()
+plotEmbedding(ArchRProj = subProj2, colorBy = "cellColData", name = "annotation_level1", embedding = "UMAP")
+
+saveArchRProject(subProj2, outputDirectory = "data/processed_data/archRsave2")
 
 
 
