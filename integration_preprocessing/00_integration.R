@@ -19,6 +19,10 @@ source("utils/archr_helpers.R")
 source("utils/matrix_helpers.R")
 source("utils/misc_helpers.R")
 source("utils/plotting_config.R")
+
+#' The addGeneIntegrationMatrix function is broken
+#' The fix is provided in the issue discussion on github
+#' https://github.com/GreenleafLab/ArchR/issues/2136#issuecomment-2191190744
 source("utils/fixed_addGeneIntegrationMatrix.R")
 
 library(BSgenome.Hsapiens.UCSC.hg38)
@@ -64,9 +68,9 @@ atac_proj <- add_gene_integration_matrix(
   sampleCellsATAC = 25000, # Default for both was 10000
   sampleCellsRNA = 25000,
   nGenes = 3000, # Default was 2000
-  seRNA = rna_proj_v3, # seurat object
+  seRNA = rna_proj, # seurat object
   addToArrow = TRUE, # add gene expression to Arrow Files (Set to false initially)
-  groupRNA = "annotation_level2", # used to determine the subgroupings specified in groupList (for constrained integration) Additionally this groupRNA is used for the nameGroup output of this function.
+  groupRNA = "annotation_level1", # used to determine the subgroupings specified in groupList (for constrained integration) Additionally this groupRNA is used for the nameGroup output of this function.
   nameCell = "RNA_paired_cell", #Name of column where cell from scRNA is matched to each cell
   nameGroup = "NamedClust_RNA", #Name of column where group from scRNA is matched to each cell
   nameScore = "predictedScore" #Name of column where prediction score from scRNA
