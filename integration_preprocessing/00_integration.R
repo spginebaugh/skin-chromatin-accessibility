@@ -53,10 +53,10 @@ rna_proj$annotation_level2 <- factor(rna_proj$annotation_level2)
 atac_proj <- addImputeWeights(atac_proj)
 
 
-options(Seurat.object.assay.version = "v3")
-rna_proj_v3 <- CreateSeuratObject(counts = GetAssayData(rna_proj, slot = "counts", assay = "Corrected"),
-                                  meta.data = rna_proj@meta.data)
-rna_proj_v3[["RNA"]] <- as(object = rna_proj[["Corrected"]], Class = "Assay")
+# options(Seurat.object.assay.version = "v3")
+# rna_proj_v3 <- CreateSeuratObject(counts = GetAssayData(rna_proj, slot = "counts", assay = "Corrected"),
+#                                   meta.data = rna_proj@meta.data)
+# rna_proj_v3[["RNA"]] <- as(object = rna_proj[["Corrected"]], Class = "Assay")
 
 set.seed(43648)
 atac_proj <- add_gene_integration_matrix(
