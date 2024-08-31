@@ -42,21 +42,11 @@ genomeAnno <- genomeAnnoHg38
 pointSize <- 0.25
 barwidth <- 0.9
 
-rna_proj$annotation_level2 <- as.character(rna_proj$annotation_level1)
-rna_proj$annotation_level2[rna_proj$annotation_level1 == "Plasma_B_cell"] <- "Lymphoid"
-rna_proj$annotation_level2[rna_proj$annotation_level1 == "Trichocyte"] <- "Keratinocyte"
-rna_proj$annotation_level2[rna_proj$annotation_level1 == "Mast"] <- "Myeloid"
-rna_proj$annotation_level2 <- factor(rna_proj$annotation_level2)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                          Integrate RNA and ATACseq                       ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 atac_proj <- addImputeWeights(atac_proj)
 
-
-# options(Seurat.object.assay.version = "v3")
-# rna_proj_v3 <- CreateSeuratObject(counts = GetAssayData(rna_proj, slot = "counts", assay = "Corrected"),
-#                                   meta.data = rna_proj@meta.data)
-# rna_proj_v3[["RNA"]] <- as(object = rna_proj[["Corrected"]], Class = "Assay")
 
 set.seed(43648)
 atac_proj <- add_gene_integration_matrix(
@@ -75,3 +65,30 @@ atac_proj <- add_gene_integration_matrix(
   nameGroup = "NamedClust_RNA", #Name of column where group from scRNA is matched to each cell
   nameScore = "predictedScore" #Name of column where prediction score from scRNA
 )
+
+
+atac_proj <- addCoAccessibility(
+  ArchRProj = atac_proj,
+  reducedDims = "IterativeLSI",
+  k = 100 # Default is 100
+)
+
+atac_proj <- addPeak2GeneLinks( 
+  ArchRProj = atac_proj,
+  reducedDims = "IterativeLSI",
+  k = 100 # Default is 100
+)
+
+## add motif info
+atac_proj <- addMotifAnnotations(atac_proj, motifSet="cisbp", name="Motif", force=TRUE)
+
+# Add background peaks
+atac_proj <- addBgdPeaks(atac_proj, force = TRUE)
+
+atac_proj <- addDeviationsMatrix(
+  ArchRProj = atac_proj, 
+  peakAnnotation = "Motif",
+  force = TRUE
+)
+
+saveArchRProject(atac_proj, output_file)
