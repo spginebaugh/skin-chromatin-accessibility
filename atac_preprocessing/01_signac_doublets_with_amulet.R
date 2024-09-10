@@ -22,6 +22,9 @@ library(BiocParallel)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                Add Doublets                              ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+options(MulticoreParam=MulticoreParam(workers=20))
+mcparam <- MulticoreParam(workers = 20)
+
 frag_path <- "data/atac_GSE212448/fragments/"
 frag_files <- list.files("data/atac_GSE212448/fragments/")
 frag_files <- frag_files[!(frag_files %in% grep("tbi",frag_files, value = TRUE))]
