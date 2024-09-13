@@ -23,11 +23,13 @@ library(BiocParallel)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 seurat <- qread("data/processed_data/signac_merge.qs")
 
+
 dblt <- qread("data/processed_data/amulet_doublets.qs")
 
 meta_sample <- read_csv("manuscript_metadata/manuscript_table_S1_sample_info.csv")
-meta_cell_atac <- read_csv("manuscript_metadata/manuscript_table_S2_scatac_meta.csv")
 
+
+meta_cell_atac <- read_csv("manuscript_metadata/manuscript_table_S2_scatac_meta.csv")
 
 
 
@@ -62,10 +64,9 @@ demuxConvert <- c(
 )
 
 seurat$sample <- ifelse(seurat$DemuxletBest == "NotClassified", seurat$sample_ID, demuxConvert[seurat$DemuxletBest])
-seurat <- seurat[,!(seurat$DemuxletClassify %in% c("AMB","DBL")) & !(seurat$sample %in% "C_SD_POOL")]
+seurat <- seurat[,!(seurat$DemuxletClassify %in% c("AMB","DBL")) & !(seurat$sample %in% "GSE212448_C_SD_POOL")]
 
-
-
+seurat$sample_name <- str_remove_all(seurat$sample, "^GS.*?_")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                              Organize Metadata                           ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,7 +77,17 @@ dblt <- do.call(rbind, dblt)
 rownames(dblt) <- dblt$barcode
 colnames(dblt)[1:6] <- paste0("amulet_", colnames(dblt)[1:6])
 
+colnames(meta_sample)[1] <- "sample_name"
+
+seurat$metaname_barcode <- word(seurat$barcode,2,-1,"_")
+colnames(meta_cell_atac) <- paste0("manuscript_", colnames(meta_cell_atac))
+colnames(meta_cell_atac)[1] <- "metaname_barcode"
+meta_cell_atac$metaname_barcode <- str_replace_all(meta_cell_atac$metaname_barcode,"#","_")
+
 metadata <- seurat@meta.data
 metadata <- left_join(metadata, dblt, by = "barcode")
+metadata <- left_join(metadata, meta_sample, by = "sample_name")
+metadata <- left_join(metadata, meta_cell_atac, by = "metaname_barcode")
+
 rownames(metadata) <- metadata$barcode
 seurat@meta.data <- metadata
