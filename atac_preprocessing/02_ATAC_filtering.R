@@ -70,9 +70,13 @@ seurat <- seurat[,!(seurat$DemuxletClassify %in% c("AMB","DBL")) & !(seurat$samp
 #                              Organize Metadata                           ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 for (i in names(dblt)){
-  dblt[[i]]$sample <- i
   dblt[[i]]$barcode <- paste0(i, "_", rownames(dblt[[i]]))
 }
 dblt <- do.call(rbind, dblt)
 rownames(dblt) <- dblt$barcode
 colnames(dblt)[1:6] <- paste0("amulet_", colnames(dblt)[1:6])
+
+metadata <- seurat@meta.data
+metadata <- left_join(metadata, dblt, by = "barcode")
+rownames(metadata) <- metadata$barcode
+seurat@meta.data <- metadata
