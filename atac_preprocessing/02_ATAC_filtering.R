@@ -25,15 +25,11 @@ library(harmony)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 seurat <- qread("data/processed_data/signac_merge.qs")
 
-
 dblt <- qread("data/processed_data/amulet_doublets.qs")
 
 meta_sample <- read_csv("manuscript_metadata/manuscript_table_S1_sample_info.csv")
 
-
 meta_cell_atac <- read_csv("manuscript_metadata/manuscript_table_S2_scatac_meta.csv")
-
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                Demultiplex                               ----
@@ -69,6 +65,7 @@ seurat$sample <- ifelse(seurat$DemuxletBest == "NotClassified", seurat$sample_ID
 seurat <- seurat[,!(seurat$DemuxletClassify %in% c("AMB","DBL")) & !(seurat$sample %in% "GSE212448_C_SD_POOL")]
 
 seurat$sample <- str_remove_all(seurat$sample, "^GS.*?_")
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                              Organize Metadata                           ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,11 +102,8 @@ seqlevels(annotations) <- paste0('chr', seqlevels(annotations))
 genome(annotations) <- "hg38"
 Annotation(seurat) <- annotations
 
-
-
 peaks_keep <- seqnames(granges(seurat)) %in% standardChromosomes(granges(seurat))
-seurat <- pbmc[as.vector(peaks_keep), ]
-
+seurat <- seurat[as.vector(peaks_keep), ]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                   QC                                      ----
@@ -173,15 +167,20 @@ metadata %>%
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  Filtering                               ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#' were missing an important file from the cellranger output
+#' so we will have to use the manuscript outputs to help us with filtering
+seurat <- seurat[,!is.na(seurat$manuscript_Sample)]
+
 seurat <- subset(
   x = seurat,
   subset = nCount_ATAC > 400 &
     nCount_ATAC < 20000 &
     blacklist_ratio < 0.01 &
-    nucleosome_signal < 3 &
+    nucleosome_signal < 4 &
     TSS.enrichment > 3 &
     amulet_q.value > 0.01 # remove doublets
 )
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                             Normalization                                ----
@@ -199,12 +198,15 @@ DepthCor(seurat)
 
 seurat <- RunHarmony(seurat, group.by.vars = "sample", reduction.use = 'lsi', dims.use = 2:30, assay.use = "ATAC", project.dim = FALSE)
 seurat <- RunUMAP(object = seurat, reduction = 'harmony', dims = 1:29)
-seurat <- FindNeighbors(object = seurat, reduction = 'lsi', dims = 1:29)
+seurat <- FindNeighbors(object = seurat, reduction = 'harmony', dims = 1:29)
 seurat <- FindClusters(object = seurat, 
                        algorithm = 3, 
                        resolution = c(0.6,0.8,1))
 DimPlot(object = seurat, label = TRUE) + NoLegend()
 DimPlot(object = seurat, group.by = c("sample","manuscript_BroadClust"), label = TRUE) + NoLegend()
+DimPlot(seurat, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"))
+
+Idents(seurat) <- seurat$ATAC_snn_res.0.6
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                              Gene Activity                               ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -214,7 +216,7 @@ seurat <- NormalizeData(
   object = seurat,
   assay = 'ATAC_RNA',
   normalization.method = 'LogNormalize',
-  scale.factor = median(seurat$nCount_RNA)
+  scale.factor = median(seurat$nCount_ATAC_RNA)
 )
 DefaultAssay(seurat) <- 'ATAC_RNA'
 
