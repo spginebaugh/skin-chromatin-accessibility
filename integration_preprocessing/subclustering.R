@@ -101,6 +101,11 @@ cluster_signac <- function(signac_obj){
   return(signac_obj)
 }
 
+integrate_and_label_transfer <- function(seurat, signac){
+  DefaultAssay(signac) <- "ATAC_RNA"
+  signac <- NormalizeData(signac)
+  signac <- ScaleData(signac, features = rownames(signac))
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                 Import Data                               ----
@@ -185,8 +190,8 @@ DefaultAssay(kera_atac) <- "ATAC"
 kera_atac <- cluster_signac(kera_atac)
 DimPlot(kera_atac, group.by = c("sample_ID", "patient_group"))
 DimPlot(kera_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
-DimPlot(kera_atac, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"), raster = FALSE, label = TRUE)
+DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-
-
+kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(9))]
+kera_atac <- cluster_signac(kera_atac)
 
