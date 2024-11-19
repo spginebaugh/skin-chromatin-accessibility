@@ -80,10 +80,10 @@ cluster_seurat <- function(seurat_obj) {
   seurat_obj <- seurat_obj %>% ScaleData()
   seurat_obj <- seurat_obj %>% RunPCA()
   set.seed(1487)
-  seurat_obj <- seurat_obj %>% RunHarmony(group.by.vars = "sample_ID", dims.use = 1:30)
-  seurat_obj <- seurat_obj %>% RunUMAP(reduction = "harmony", dims = 1:30)
+  seurat_obj <- seurat_obj %>% RunHarmony(group.by.vars = "sample_ID", dims.use = 1:20)
+  seurat_obj <- seurat_obj %>% RunUMAP(reduction = "harmony", dims = 1:20)
   set.seed(1487)
-  seurat_obj <- seurat_obj %>% FindNeighbors(reduction = "harmony", dims = 1:30)
+  seurat_obj <- seurat_obj %>% FindNeighbors(reduction = "harmony", dims = 1:20)
   seurat_obj <- seurat_obj %>% FindClusters(resolution = c(0.2,0.4))
   
   return(seurat_obj)
@@ -96,10 +96,10 @@ cluster_signac <- function(signac_obj){
   signac_obj <- FindTopFeatures(signac_obj, min.cutoff = 'q0')
   signac_obj <- RunSVD(signac_obj)
   set.seed(1487)
-  signac_obj <- RunHarmony(signac_obj, group.by.vars = "sample_ID", reduction.use = 'lsi', dims.use = 2:30, assay.use = "ATAC", project.dim = FALSE)
-  signac_obj <- RunUMAP(object = signac_obj, reduction = 'harmony', dims = 1:29)
+  signac_obj <- RunHarmony(signac_obj, group.by.vars = "sample_ID", reduction.use = 'lsi', dims.use = 2:13, assay.use = "ATAC", project.dim = FALSE)
+  signac_obj <- RunUMAP(object = signac_obj, reduction = 'harmony', dims = 1:12)
   set.seed(1487)
-  signac_obj <- FindNeighbors(object = signac_obj, reduction = 'harmony', dims = 1:29)
+  signac_obj <- FindNeighbors(object = signac_obj, reduction = 'harmony', dims = 1:12)
   signac_obj <- FindClusters(object = signac_obj, 
                             algorithm = 3, 
                             resolution = c(0.6,0.8,1))
@@ -109,12 +109,12 @@ cluster_signac <- function(signac_obj){
 # # decided to exclude from analysis because it is extremely slow
 # find_coaccessable_networks <- function(signac_obj){
 #   DefaultAssay(signac_obj) <- "ATAC"
-#   kera_cds <- as.cell_data_set(signac_obj)
-#   kera_cicero <- make_cicero_cds(kera_cds, reduced_coordinates = reducedDims(kera_cds)$UMAP)
+#   signac_cds <- as.cell_data_set(signac_obj)
+#   signac_cicero <- make_cicero_cds(signac_cds, reduced_coordinates = reducedDims(signac_cds)$UMAP)
 #   
 #   genome <- seqlengths(signac_obj)
 #   genome.df <- data.frame("chr" = names(genome), "length" = genome)
-#   conns <- run_cicero(kera_cicero, genomic_coords = genome.df, sample_num = 100)
+#   conns <- run_cicero(signac_cicero, genomic_coords = genome.df, sample_num = 100)
 #   ccans <- generate_ccans(conns)
 #   links <- ConnectionsToLinks(conns = conns, ccans = ccans)
 #   Links(signac_obj) <- links
