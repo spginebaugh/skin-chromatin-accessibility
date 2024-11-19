@@ -72,7 +72,6 @@ imputation <- TransferData(
   )
 
 signac[["RNA_imputed"]] <- imputation
-qsave(signac, "data/processed_data/signac_integrated.qs")
 
 
 ## coembed for plotting
@@ -88,4 +87,37 @@ coembed$sequence_type[colnames(coembed) %in% colnames(signac)] <- "ATAC"
 
 qsave(coembed, "data/processed_data/coembed.qs")
 
+
+## use coembed to help with labeling 
+
+signac$annotation_level1 <- plyr::revalue(signac$ATAC_snn_res.0.8,
+                                          c('0' = "Keratinocyte",
+                                            '1' = "Lymphoid",
+                                            '2' = "Keratinocyte",
+                                            '3' = "Fibroblast",
+                                            '4' = "Muscle",
+                                            '5' = "Vascular_endo",
+                                            '6' = "Fibroblast",
+                                            '7' = "Myeloid",
+                                            '8' = "Keratinocyte",
+                                            '9' = "Keratinocyte",
+                                            '10' = "Fibroblast",
+                                            '11' = "Lymphoid",
+                                            '12' = "Vascular_endo",
+                                            '13' = "Lymphoid",
+                                            '14' = "Muscle",
+                                            '15' = "Myeloid", 
+                                            '16' = "Fibroblast",
+                                            '17' = "Myeloid",
+                                            '18' = "Myeloid",
+                                            '19' = "Melanocyte",
+                                            '20' = "Keratinocyte",
+                                            '21' = "Keratinocyte",
+                                            '22' = "Lymphatic_endo",
+                                            '23' = "Keratinocyte",
+                                            '24' = "Keratinocyte",
+                                            '25' = "Plasma_B_cell",
+                                            '26' = "Keratinocyte"))
+
+qsave(signac, "data/processed_data/signac_integrated.qs")
 
