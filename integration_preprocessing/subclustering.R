@@ -29,7 +29,7 @@ library(patchwork)
 
 library(presto)
 
-
+set.seed(1487)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  Functions                               ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,9 +77,10 @@ cluster_seurat <- function(seurat_obj) {
   seurat_obj <- seurat_obj %>% FindVariableFeatures()
   seurat_obj <- seurat_obj %>% ScaleData()
   seurat_obj <- seurat_obj %>% RunPCA()
+  set.seed(1487)
   seurat_obj <- seurat_obj %>% RunHarmony(group.by.vars = "sample_ID", dims.use = 1:30)
   seurat_obj <- seurat_obj %>% RunUMAP(reduction = "harmony", dims = 1:30)
-  
+  set.seed(1487)
   seurat_obj <- seurat_obj %>% FindNeighbors(reduction = "harmony", dims = 1:30)
   seurat_obj <- seurat_obj %>% FindClusters(resolution = c(0.2,0.4))
   
@@ -92,8 +93,10 @@ cluster_signac <- function(signac_obj){
   signac_obj <- RunTFIDF(signac_obj)
   signac_obj <- FindTopFeatures(signac_obj, min.cutoff = 'q0')
   signac_obj <- RunSVD(signac_obj)
+  set.seed(1487)
   signac_obj <- RunHarmony(signac_obj, group.by.vars = "sample_ID", reduction.use = 'lsi', dims.use = 2:30, assay.use = "ATAC", project.dim = FALSE)
   signac_obj <- RunUMAP(object = signac_obj, reduction = 'harmony', dims = 1:29)
+  set.seed(1487)
   signac_obj <- FindNeighbors(object = signac_obj, reduction = 'harmony', dims = 1:29)
   signac_obj <- FindClusters(object = signac_obj, 
                             algorithm = 3, 
@@ -101,10 +104,70 @@ cluster_signac <- function(signac_obj){
   return(signac_obj)
 }
 
-integrate_and_label_transfer <- function(seurat, signac){
-  DefaultAssay(signac) <- "ATAC_RNA"
-  signac <- NormalizeData(signac)
-  signac <- ScaleData(signac, features = rownames(signac))
+integrate_and_label_transfer <- function(seurat_obj, signac_obj){
+  DefaultAssay(signac_obj) <- "ATAC_RNA"
+  signac_obj <- NormalizeData(signac_obj)
+  signac_obj <- ScaleData(signac_obj, features = rownames(signac_obj))
+  
+  transfer_anchors <- FindTransferAnchors(
+    reference = seurat_obj, 
+    query = signac_obj,
+    features = VariableFeatures(object = seurat_obj),
+    reference.assay = "Corrected",
+    query.assay = "ATAC_RNA",
+    reduction = "cca",
+    normalization.method = "LogNormalize"
+  )
+  
+  celltype_predictions_clusters <- TransferData(
+    anchorset = transfer_anchors,
+    refdata = seurat_obj$Corrected_snn_res.0.2,
+    weight.reduction = signac_obj[["lsi"]],
+    dims = 2:30
+  )
+  colnames(celltype_predictions_clusters)[1] <- "cluster_transfer"
+  signac_obj <- AddMetaData(signac_obj, metadata = celltype_predictions_clusters)
+  
+  celltype_predictions_ms <- TransferData(
+    anchorset = transfer_anchors,
+    refdata = seurat_obj$ms_veryfine_ct,
+    weight.reduction = signac_obj[["lsi"]],
+    dims = 2:30
+  )
+  colnames(celltype_predictions_ms)[1] <- "ms_veryfine_transfer"
+  signac_obj <- AddMetaData(signac_obj, metadata = celltype_predictions_ms)
+  
+  ## impute scATAC-seq based on scRNA-seq
+  genes_use <- VariableFeatures(seurat_obj)
+  refdata <- GetAssayData(seurat_obj, assay = "Corrected", slot = "data")[genes_use,]
+  
+  imputation <- TransferData(
+    anchorset = transfer_anchors,
+    refdata = refdata,
+    weight.reduction = signac_obj[["lsi"]],
+    dims = 2:30
+  )
+  
+  signac_obj[["RNA_subclust_imputed"]] <- imputation
+  
+  return(signac_obj)
+}
+
+coembed <- function(seurat_obj, signac_obj){
+  signac_obj[["Corrected"]] <- signac_obj[["RNA_imputed"]]
+  signac_obj[["RNA_imputed"]] <- NULL
+  
+  genes_use <- VariableFeatures(seurat_obj)
+  coembed <- merge(x = seurat_obj[genes_use, ], y = signac_obj[genes_use,])
+  coembed <- ScaleData(coembed, features = genes_use, do.scale = FALSE)
+  coembed <- RunPCA(coembed, features = genes_use, verbose = FALSE)
+  coembed <- RunUMAP(coembed, dims = 1:30)
+  
+  coembed$sequence_type <- "RNA"
+  coembed$sequence_type[colnames(coembed) %in% colnames(signac_obj)] <- "ATAC"
+  
+  return(coembed)
+  
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -180,7 +243,7 @@ FeaturePlot(kera_rna, min.cutoff = "q1", max.cutoff = "q99",
 DimPlot(kera_rna, group.by = c("Corrected_snn_res.0.4"), raster = FALSE, label = FALSE,
         split.by = "patient_group")
 
-kera_rna <- kera_rna[,!(kera_rna$Corrected_snn_res.0.2 %in% c(9,10))]
+kera_rna <- kera_rna[,!(kera_rna$Corrected_snn_res.0.2 %in% c(10,11))]
 kera_rna <- cluster_seurat(kera_rna)
 
   ### ATAC
@@ -190,8 +253,20 @@ DefaultAssay(kera_atac) <- "ATAC"
 kera_atac <- cluster_signac(kera_atac)
 DimPlot(kera_atac, group.by = c("sample_ID", "patient_group"))
 DimPlot(kera_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
+DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = FALSE)
 DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(9))]
+kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
 kera_atac <- cluster_signac(kera_atac)
+
+  ### coembed
+kera_atac <- integrate_and_label_transfer(kera_rna, kera_atac)
+DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","cluster_transfer","ms_veryfine_transfer"), raster = FALSE, label = TRUE)
+
+kera_coembed <- coembed(kera_rna, kera_atac)
+DimPlot(kera_coembed, group.by = c("sequence_type", "patient_group"))
+
+
+
+
 
