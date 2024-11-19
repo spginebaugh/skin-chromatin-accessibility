@@ -29,6 +29,8 @@ library(patchwork)
 
 library(presto)
 
+# library(cicero)
+# library(monocle3)
 set.seed(1487)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                  Functions                               ----
@@ -104,6 +106,21 @@ cluster_signac <- function(signac_obj){
   return(signac_obj)
 }
 
+# # decided to exclude from analysis because it is extremely slow
+# find_coaccessable_networks <- function(signac_obj){
+#   DefaultAssay(signac_obj) <- "ATAC"
+#   kera_cds <- as.cell_data_set(signac_obj)
+#   kera_cicero <- make_cicero_cds(kera_cds, reduced_coordinates = reducedDims(kera_cds)$UMAP)
+#   
+#   genome <- seqlengths(signac_obj)
+#   genome.df <- data.frame("chr" = names(genome), "length" = genome)
+#   conns <- run_cicero(kera_cicero, genomic_coords = genome.df, sample_num = 100)
+#   ccans <- generate_ccans(conns)
+#   links <- ConnectionsToLinks(conns = conns, ccans = ccans)
+#   Links(signac_obj) <- links
+#   return(signac_obj)
+# }
+
 integrate_and_label_transfer <- function(seurat_obj, signac_obj){
   DefaultAssay(signac_obj) <- "ATAC_RNA"
   signac_obj <- NormalizeData(signac_obj)
@@ -154,8 +171,8 @@ integrate_and_label_transfer <- function(seurat_obj, signac_obj){
 }
 
 coembed <- function(seurat_obj, signac_obj){
-  signac_obj[["Corrected"]] <- signac_obj[["RNA_imputed"]]
-  signac_obj[["RNA_imputed"]] <- NULL
+  signac_obj[["Corrected"]] <- signac_obj[["RNA_subclust_imputed"]]
+  signac_obj[["RNA_subclust_imputed"]] <- NULL
   
   genes_use <- VariableFeatures(seurat_obj)
   coembed <- merge(x = seurat_obj[genes_use, ], y = signac_obj[genes_use,])
@@ -259,13 +276,17 @@ DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_
 kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
 kera_atac <- cluster_signac(kera_atac)
 
-  ### coembed
+  ### integrate and label transfer
 kera_atac <- integrate_and_label_transfer(kera_rna, kera_atac)
 DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","cluster_transfer","ms_veryfine_transfer"), raster = FALSE, label = TRUE)
 
+  ### find cicero connections
+# kera_atac <- find_coaccessable_networks(kera_atac) # excluded because it is too slow
+
+  ### coembed
 kera_coembed <- coembed(kera_rna, kera_atac)
 DimPlot(kera_coembed, group.by = c("sequence_type", "patient_group"))
-
+DimPlot(kera_coembed, group.by = c("patient_group"), split.by = "sequence_type")
 
 
 
