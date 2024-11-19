@@ -71,24 +71,34 @@ qsave(seurat, "data/processed_data/signac_additional_info.qs")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                               Co-accessible network                     ----
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#' cant get conversion from Seurat to CDS to work properly
-#' not worth spending the time to fix
+seurat_in <- seurat
+rownames(seurat_in) <- str_replace_all(rownames(seurat_in), pattern = "-","_")
+cds <- as.cell_data_set(x = seurat)
+cds2 <- cds
+cds2@assays@data@listData[["counts"]]@Dimnames[[1]] <- str_replace_all(cds2@assays@data@listData[["counts"]]@Dimnames[[1]], pattern = "-","_")
+cds2@assays@data@listData[["logcounts"]]@Dimnames[[1]] <- str_replace_all(cds2@assays@data@listData[["logcounts"]]@Dimnames[[1]], pattern = "-","_")
 
-# cds <- as.cell_data_set(x = seurat)
 # cds <- cluster_cells(cds)
-# cds <- as.CellDataSet(cds)
-# cicero <- make_cicero_cds(cds, reduced_coordinates = reducedDimS(cds))
-# 
-# 
-# genome <- Signac::seqlengths(seurat)
-# genome_df <- data.frame("chr" = names(genome), "length" = genome)
-# conns <- run_cicero(cds, genomic_coords = genome.df, sample_num = 100)
-# 
-# ccans <- generate_ccans(conns)
-# 
-# links <- ConnectionsToLinks(conns = conns, ccans = ccans)
-# 
-# ## add into seurat
-# Links(seurat) <- links
+cicero <- make_cicero_cds(cds, reduced_coordinates = reducedDims(cds)$UMAP)
+
+genome <- Signac::seqlengths(seurat)
+genome_df <- data.frame("chr" = names(genome), "length" = genome)
+
+distance_parameters <- estimate_distance_parameter(cicero, genomic_coords = genome_df)
+mean_distance_parameter <- mean(unlist(distance_parameters))
+
+cicero_model <- generate_cicero_models(cicero,
+                                       distance_parameter = mean_distance_parameter,
+                                       genomic_coords = genome_df)
+
+
+conns <- assemble_connections(cicero_model)
+
+ccans <- generate_ccans(conns)
+
+links <- ConnectionsToLinks(conns = conns, ccans = ccans)
+
+## add into seurat
+Links(seurat) <- links
 
 qsave(seurat, "data/processed_data/signac_all_additional_info.qs")
