@@ -140,7 +140,7 @@ integrate_and_label_transfer <- function(seurat_obj, signac_obj){
     anchorset = transfer_anchors,
     refdata = seurat_obj$Corrected_snn_res.0.2,
     weight.reduction = signac_obj[["lsi"]],
-    dims = 2:30
+    dims = 2:13
   )
   colnames(celltype_predictions_clusters)[1] <- "cluster_transfer"
   signac_obj <- AddMetaData(signac_obj, metadata = celltype_predictions_clusters)
@@ -149,7 +149,7 @@ integrate_and_label_transfer <- function(seurat_obj, signac_obj){
     anchorset = transfer_anchors,
     refdata = seurat_obj$ms_veryfine_ct,
     weight.reduction = signac_obj[["lsi"]],
-    dims = 2:30
+    dims = 2:13
   )
   colnames(celltype_predictions_ms)[1] <- "ms_veryfine_transfer"
   signac_obj <- AddMetaData(signac_obj, metadata = celltype_predictions_ms)
@@ -162,7 +162,7 @@ integrate_and_label_transfer <- function(seurat_obj, signac_obj){
     anchorset = transfer_anchors,
     refdata = refdata,
     weight.reduction = signac_obj[["lsi"]],
-    dims = 2:30
+    dims = 2:13
   )
   
   signac_obj[["RNA_subclust_imputed"]] <- imputation
