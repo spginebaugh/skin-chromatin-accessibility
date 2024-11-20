@@ -178,7 +178,7 @@ coembed <- function(seurat_obj, signac_obj){
   coembed <- merge(x = seurat_obj[genes_use, ], y = signac_obj[genes_use,])
   coembed <- ScaleData(coembed, features = genes_use, do.scale = FALSE)
   coembed <- RunPCA(coembed, features = genes_use, verbose = FALSE)
-  coembed <- RunUMAP(coembed, dims = 1:30)
+  coembed <- RunUMAP(coembed, dims = 1:20)
   
   coembed$sequence_type <- "RNA"
   coembed$sequence_type[colnames(coembed) %in% colnames(signac_obj)] <- "ATAC"
@@ -260,7 +260,7 @@ DimPlot(kera_rna, group.by = c("sample_ID", "patient_group"))
 DimPlot(kera_rna, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
 DimPlot(kera_rna, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"), raster = FALSE, label = TRUE)
 
-kera_rna <- kera_rna[,!(kera_rna$Corrected_snn_res.0.2 %in% c(10,11))]
+kera_rna <- kera_rna[,!(kera_rna$Corrected_snn_res.0.2 %in% c(9))]
 kera_rna <- cluster_seurat(kera_rna)
 
   ### ATAC
@@ -273,7 +273,7 @@ DimPlot(kera_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_c
 DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = FALSE)
 DimPlot(kera_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
+kera_atac <- kera_atac[,!(kera_atac$ATAC_snn_res.0.6 %in% c(11,14,9))]
 kera_atac <- cluster_signac(kera_atac)
 
   ### integrate and label transfer
@@ -306,7 +306,7 @@ DimPlot(fibro_rna, group.by = c("sample_ID", "patient_group"))
 DimPlot(fibro_rna, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
 DimPlot(fibro_rna, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"), raster = FALSE, label = TRUE)
 
-fibro_rna <- fibro_rna[,!(fibro_rna$Corrected_snn_res.0.2 %in% c(8))]
+fibro_rna <- fibro_rna[,!(fibro_rna$Corrected_snn_res.0.2 %in% c(7))]
 fibro_rna <- cluster_seurat(fibro_rna)
 
 ### ATAC
@@ -367,7 +367,7 @@ DimPlot(lymph_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_
 DimPlot(lymph_atac, group.by = c("ATAC_snn_res.0.6","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = FALSE)
 DimPlot(lymph_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-lymph_atac <- lymph_atac[,!(lymph_atac$ATAC_snn_res.0.6 %in% c(18))]
+lymph_atac <- lymph_atac[,!(lymph_atac$ATAC_snn_res.0.6 %in% c(11))]
 lymph_atac <- cluster_signac(lymph_atac)
 
 ### integrate and label transfer
@@ -400,7 +400,7 @@ DimPlot(myeloid_rna, group.by = c("sample_ID", "patient_group"))
 DimPlot(myeloid_rna, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
 DimPlot(myeloid_rna, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"), raster = FALSE, label = TRUE)
 
-myeloid_rna <- myeloid_rna[,!(myeloid_rna$Corrected_snn_res.0.2 %in% c(10,11))]
+myeloid_rna <- myeloid_rna[,!(myeloid_rna$Corrected_snn_res.0.2 %in% c(6))]
 myeloid_rna <- cluster_seurat(myeloid_rna)
 
 ### ATAC
@@ -413,8 +413,8 @@ DimPlot(myeloid_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfin
 DimPlot(myeloid_atac, group.by = c("ATAC_snn_res.0.6","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = FALSE)
 DimPlot(myeloid_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-myeloid_atac <- myeloid_atac[,!(myeloid_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
-myeloid_atac <- cluster_signac(myeloid_atac)
+# myeloid_atac <- myeloid_atac[,!(myeloid_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
+# myeloid_atac <- cluster_signac(myeloid_atac)
 
 ### integrate and label transfer
 myeloid_atac <- integrate_and_label_transfer(myeloid_rna, myeloid_atac)
@@ -446,8 +446,8 @@ DimPlot(endo_rna, group.by = c("sample_ID", "patient_group"))
 DimPlot(endo_rna, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = TRUE)
 DimPlot(endo_rna, group.by = c("Corrected_snn_res.0.2","Corrected_snn_res.0.4"), raster = FALSE, label = TRUE)
 
-endo_rna <- endo_rna[,!(endo_rna$Corrected_snn_res.0.2 %in% c(10,11))]
-endo_rna <- cluster_seurat(endo_rna)
+# endo_rna <- endo_rna[,!(endo_rna$Corrected_snn_res.0.2 %in% c(10,11))]
+# endo_rna <- cluster_seurat(endo_rna)
 
 ### ATAC
 endo_atac <- signac[,signac$annotation_level1 %in% c("Vascular_endo","Lymphatic_endo")] 
@@ -459,7 +459,7 @@ DimPlot(endo_atac, group.by = c("annotation_level1","ms_fine_ct", "ms_veryfine_c
 DimPlot(endo_atac, group.by = c("ATAC_snn_res.0.6","ms_fine_ct", "ms_veryfine_ct"), raster = FALSE, label = FALSE)
 DimPlot(endo_atac, group.by = c("ATAC_snn_res.0.6","ATAC_snn_res.0.8","ATAC_snn_res.1"), raster = FALSE, label = TRUE)
 
-endo_atac <- endo_atac[,!(endo_atac$ATAC_snn_res.0.6 %in% c(10,9,12))]
+endo_atac <- endo_atac[,!(endo_atac$ATAC_snn_res.0.6 %in% c(10,11,12))]
 endo_atac <- cluster_signac(endo_atac)
 
 ### integrate and label transfer
